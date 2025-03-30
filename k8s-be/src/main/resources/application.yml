@@ -9,5 +9,25 @@ management:
         include: "*"
   endpoint:
     health:
-      show-details: ALWAYSk8s-be:
-  message: "Message from embedded application.yml"
+      show-details: ALWAYS
+spring: # Merged from deprecated & removed bootstrap.yml
+  application:
+    name: k8s-demo-be
+  config:
+    import: "kubernetes:"
+  cloud:
+    kubernetes:
+      reload:
+        enabled: true
+        mode: event
+# Optional here because it's matched by default, but shows an example of an advanced config possible:
+#     config: 
+#       sources:
+#         - name: k8s-demo-be
+#           namespace: k8s-spring-boot-apps
+k8s-demo:
+  be:
+    message: "Message from embedded application.yml"
+    tip:
+      summary: Did you know that Java HttpClient makes a new connection to server immediately after an IOException?
+      learn-more-ref:

@@ -1,9 +1,12 @@
 package ch.martin.k8s.be;
 
+import com.adazes.k8s.demo.be.dto.SpringInfoDto;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -11,5 +14,8 @@ import lombok.Setter;
 @AllArgsConstructor
 public class GreetingDto {
 
-	public String message;
+	private String message;
+	private String appVersion;
+	private LocalDateTime now;
+	private SpringInfoDto spring;
 }

@@ -9,5 +9,4 @@ class BurnBabyBurnTests {
 	@Test
 	void contextLoads() {
 	}
-
 }

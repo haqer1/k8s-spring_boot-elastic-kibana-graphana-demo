@@ -10,3 +10,6 @@ management:
   endpoint:
     health:
       show-details: ALWAYS
+spring:
+  application:
+    name: k8s-demo-sba

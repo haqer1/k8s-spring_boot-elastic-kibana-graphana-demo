@@ -4,8 +4,11 @@ metadata:
   namespace: k8s-spring-boot-apps
   name: namespace-reader
 rules:
-  - apiGroups: ["", "extensions", "apps"]
-    resources: ["namespaces", "configmaps", "pods", "services", "endpoints", "secrets"]
+  - apiGroups: ["", "apps"]
+    resources: ["endpoints", "configmaps", "pods", "services"] # , "namespaces", "secrets"
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["extensions"]
+    resources: ["deployments"]
     verbs: ["get", "list", "watch"]
 ---
 kind: RoleBinding
@@ -21,32 +24,61 @@ subjects:
 roleRef:
   kind: Role
   name: namespace-reader
-  apiGroup: "rbac.authorization.k8s.io"
+  apiGroup: rbac.authorization.k8s.io
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: k8s-be
+  name: k8s-demo-be
   namespace: k8s-spring-boot-apps
 data:
   application.yml: |-
-    k8s-be:
-      message: "Message in a bottle"
+    spring:
+      application:
+        name: k8s-demo-be
+      cloud:
+        kubernetes:
+          reload:
+            enabled: true
+            mode: event
+    ---
+    spring:
+      config:
+        activate:
+          on-profile: development
+    k8s-demo:
+      be:
+        message: Development-specific config message
+        tip:
+          summary: "Development-specific tip: Did you know that Java HttpClient makes a new connection to server immediately after an IOException?"
+          learn-more-ref: https://github.com/haqer1/java-http-client-demo?tab=readme-ov-file#for-ioexception
+    ---
+    spring:
+      config:
+        activate:
+          on-profile: integration
+    k8s-demo:
+      be:
+        message: Integration-specific config message
+        tip:
+          summary: "Integration-specific tip: Did you know that Java HttpClient makes a new connection to server upon a new request following an HttpTimeoutException?"
+          learn-more-ref: https://github.com/haqer1/java-http-client-demo?tab=readme-ov-file#for-httptimeoutexception
+
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: k8s-be
+  name: k8s-demo-be
   namespace: k8s-spring-boot-apps
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: k8s-be
+      app: k8s-demo-be
   template:
     metadata:
       labels:
-        app: k8s-be
+        app: k8s-demo-be
         fluentd-log-format: spring-boot-json
       annotations:
            prometheus.io/scrape: 'true'
@@ -54,13 +86,19 @@ spec:
            prometheus.io/port: '8010'
     spec:
       containers:
-      - name: k8s-be-container
-        image: gcr.io/handy-zephyr-272321/k8s-be:1.0.2
+      - name: k8s-demo-be-container
+        image: docker.io/adazes/k8s-demo-be:1.3.19
         ports:
         - name: http-service
           containerPort: 80
         - name: http-management
           containerPort: 8010
+        env:
+          - name: SPRING_PROFILES_ACTIVE
+            value: "development"
+        envFrom:
+        - configMapRef:
+            name: k8s-demo-be
         readinessProbe:
           httpGet:
             path: /actuator/health
@@ -73,34 +111,35 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: k8s-be
+  name: k8s-demo-be
   namespace: k8s-spring-boot-apps
   labels:
     sba-monitored: "true"
 spec:
   type: NodePort
   selector:
-    app: k8s-be
+    app: k8s-demo-be
   ports:
   - port: 80
     name: http-service
+    nodePort: 30001
   - port: 8010
     name: http-management
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: k8s-bff
+  name: k8s-demo-bff
   namespace: k8s-spring-boot-apps
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: k8s-bff
+      app: k8s-demo-bff
   template:
     metadata:
       labels:
-        app: k8s-bff
+        app: k8s-demo-bff
         fluentd-log-format: spring-boot-json
       annotations:
            prometheus.io/scrape: 'true'
@@ -108,8 +147,8 @@ spec:
            prometheus.io/port: '8010'
     spec:
       containers:
-      - name: k8s-bff-container
-        image: gcr.io/handy-zephyr-272321/k8s-bff:1.0.0
+      - name: k8s-demo-bff-container
+        image: docker.io/adazes/k8s-demo-bff:1.3.19
         ports:
         - name: http-service
           containerPort: 80
@@ -127,14 +166,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: k8s-bff
+  name: k8s-demo-bff
   namespace: k8s-spring-boot-apps
   labels:
     sba-monitored: "true"
 spec:
   type: NodePort
   selector:
-    app: k8s-bff
+    app: k8s-demo-bff
   ports:
   - port: 80
     name: http-service
@@ -145,7 +184,7 @@ spec:
 kind: ConfigMap
 apiVersion: v1
 metadata:
-  name: k8s-sba
+  name: k8s-demo-sba
   namespace: k8s-spring-boot-apps
 data:
   application.yml: |-
@@ -160,17 +199,17 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: k8s-sba
+  name: k8s-demo-sba
   namespace: k8s-spring-boot-apps
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: k8s-sba
+      app: k8s-demo-sba
   template:
     metadata:
       labels:
-        app: k8s-sba
+        app: k8s-demo-sba
         fluentd-log-format: spring-boot-json
       annotations:
            prometheus.io/scrape: 'true'
@@ -178,8 +217,8 @@ spec:
            prometheus.io/port: '8010'
     spec:
       containers:
-      - name: k8s-sba-container
-        image: gcr.io/handy-zephyr-272321/k8s-sba:1.0.0
+      - name: k8s-demo-sba-container
+        image: docker.io/adazes/k8s-demo-sba:1.3.19
         ports:
         - name: http-service
           containerPort: 80
@@ -197,14 +236,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: k8s-sba
+  name: k8s-demo-sba
   namespace: k8s-spring-boot-apps
   labels:
     sba-monitored: "true"
 spec:
   type: NodePort
   selector:
-    app: k8s-sba
+    app: k8s-demo-sba
   ports:
   - port: 80
     name: http-service
