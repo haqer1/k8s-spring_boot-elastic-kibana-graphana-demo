@@ -17,6 +17,8 @@ After completing the installation described below, you will control a complete a
 
 ## Steps to install
 
+Feel free to also download and take a look at a WEBM [video](https://github.com/haqer1/k8s-spring_boot-elastic-kibana-graphana-demo/raw/refs/heads/master/assets/k8s-spring_boot-elastic-kibana-graphana-demo.webm "WEBM video") providing an illustration of the steps below.
+
 ### Create a Cluster on Minikube
 
 This guide assumes that you have VirtualBox installed on your computer or a similar virtualization software.
